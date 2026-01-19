@@ -1,0 +1,77 @@
+import pandas as pd
+import os
+import random
+
+# ==========================
+# CONFIG
+# ==========================
+INPUT_EXCEL = r"D:\Metering_data\Load_Survey November month (2).xlsx"
+OUTPUT_DIR = r"D:\Metering_data\excel_split_books"
+SAMPLE_ROWS = 5   # kitne random rows check karne hain per sheet
+# ==========================
+
+
+def validate_excel_split(input_excel, output_dir):
+    print("\n🔍 STARTING EXCEL SPLIT VALIDATION\n")
+
+    xls = pd.ExcelFile(input_excel)
+    all_ok = True
+
+    for sheet in xls.sheet_names:
+        print(f"\n📄 Checking sheet: {sheet}")
+
+        output_file = os.path.join(output_dir, f"{sheet}.xlsx")
+
+        # 1️⃣ Sheet file exists?
+        if not os.path.exists(output_file):
+            print(f"❌ FAIL: Output file missing for sheet '{sheet}'")
+            all_ok = False
+            continue
+        else:
+            print("✔ Output file exists")
+
+        # Read data
+        orig_df = pd.read_excel(input_excel, sheet_name=sheet)
+        out_df = pd.read_excel(output_file)
+
+        # 2️⃣ Row count check
+        if len(orig_df) == len(out_df):
+            print(f"✔ Row count match: {len(orig_df)}")
+        else:
+            print(f"❌ FAIL: Row count mismatch (orig={len(orig_df)}, out={len(out_df)})")
+            all_ok = False
+            continue
+
+        # 3️⃣ Column structure check
+        if list(orig_df.columns) == list(out_df.columns):
+            print("✔ Column names & order match")
+        else:
+            print("❌ FAIL: Column mismatch")
+            print("Original:", list(orig_df.columns))
+            print("Output  :", list(out_df.columns))
+            all_ok = False
+            continue
+
+        # 4️⃣ Random sample data check
+        if len(orig_df) > 0:
+            for _ in range(min(SAMPLE_ROWS, len(orig_df))):
+                idx = random.randint(0, len(orig_df) - 1)
+                if not orig_df.iloc[idx].equals(out_df.iloc[idx]):
+                    print(f"❌ FAIL: Data mismatch at row index {idx}")
+                    all_ok = False
+                    break
+            else:
+                print(f"✔ {SAMPLE_ROWS} random rows matched")
+        else:
+            print("⚠ Sheet is empty (skipped data check)")
+
+    print("\n==============================")
+    if all_ok:
+        print("🎉 FINAL RESULT: ✅ PASS — DATA 100% SAFE")
+    else:
+        print("🚨 FINAL RESULT: ❌ FAIL — DATA ISSUE FOUND")
+    print("==============================\n")
+
+
+# RUN VALIDATION
+validate_excel_split(INPUT_EXCEL, OUTPUT_DIR)
